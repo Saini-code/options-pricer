@@ -63,7 +63,15 @@ def simulate_gbm_paths(
     -------
     np.ndarray, shape (n_paths, n_steps + 1)
         Simulated price paths, one per row. Column 0 is S0 for every row.
+
+    Raises
+    ------
+    ValueError
+        If n_steps < 1.
     """
+    if n_steps < 1:
+        raise ValueError(f"n_steps must be >= 1 (need at least one interval), got {n_steps}")
+
     rng = np.random.default_rng(seed)
     dt = T / n_steps
     z = rng.standard_normal((n_paths, n_steps))

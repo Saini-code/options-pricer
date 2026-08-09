@@ -123,6 +123,9 @@ def test_zero_volatility_returns_discounted_forward_payoff():
     dict(S=100, K=-1, T=1, r=0.05, sigma=0.2),
     dict(S=100, K=100, T=-1, r=0.05, sigma=0.2),
     dict(S=100, K=100, T=1, r=0.05, sigma=-0.2),
+    dict(S=0, K=100, T=1, r=0.05, sigma=0.2),   # S must be strictly positive
+    dict(S=100, K=0, T=1, r=0.05, sigma=0.2),   # K must be strictly positive
+    dict(S=0, K=0, T=1, r=0.05, sigma=0.2),     # would silently NaN via log(0/0) if unguarded
 ])
 def test_negative_inputs_raise_value_error(bad_kwargs):
     with pytest.raises(ValueError):

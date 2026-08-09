@@ -2,19 +2,21 @@
 
 from __future__ import annotations
 
-from typing import Union
-
 import numpy as np
 from scipy.stats import norm
 
-ArrayLike = Union[float, np.ndarray]
+from ._types import ArrayLike
 
 
 def _validate_inputs(S: ArrayLike, K: ArrayLike, T: ArrayLike, sigma: ArrayLike) -> None:
-    if np.any(np.asarray(S) < 0):
-        raise ValueError("Spot price S must be non-negative.")
-    if np.any(np.asarray(K) < 0):
-        raise ValueError("Strike price K must be non-negative.")
+    # S and K must be strictly positive: S=0 is a degenerate absorbing
+    # state under GBM (never handled specially below) and K=0 is not a
+    # meaningful strike. Rejecting both here avoids a silent log(S/K) =
+    # log(0/0) = NaN in d1 if S and K were ever both exactly zero.
+    if np.any(np.asarray(S) <= 0):
+        raise ValueError("Spot price S must be strictly positive.")
+    if np.any(np.asarray(K) <= 0):
+        raise ValueError("Strike price K must be strictly positive.")
     if np.any(np.asarray(T) < 0):
         raise ValueError("Time to expiry T must be non-negative.")
     if np.any(np.asarray(sigma) < 0):
@@ -52,7 +54,7 @@ def d1(S: ArrayLike, K: ArrayLike, T: ArrayLike, r: float, sigma: ArrayLike, q: 
     Raises
     ------
     ValueError
-        If any of S, K, T, sigma is negative.
+        If S or K is not strictly positive, or T or sigma is negative.
     """
     S = np.asarray(S, dtype=float)
     K = np.asarray(K, dtype=float)
@@ -95,7 +97,7 @@ def d2(S: ArrayLike, K: ArrayLike, T: ArrayLike, r: float, sigma: ArrayLike, q: 
     Raises
     ------
     ValueError
-        If any of S, K, T, sigma is negative.
+        If S or K is not strictly positive, or T or sigma is negative.
     """
     sigma = np.asarray(sigma, dtype=float)
     T = np.asarray(T, dtype=float)
@@ -140,8 +142,8 @@ def bsm_price(
     Raises
     ------
     ValueError
-        If option_type is not 'call' or 'put', or if any of S, K, T, sigma
-        is negative.
+        If option_type is not 'call' or 'put', or if S or K is not strictly
+        positive, or T or sigma is negative.
 
     Notes
     -----

@@ -116,3 +116,28 @@ def test_price_above_forward_returns_nan():
 def test_invalid_option_type_raises_value_error():
     with pytest.raises(ValueError):
         implied_vol(5.0, S=100.0, K=100.0, T=1.0, r=0.05, q=0.0, option_type="straddle")
+
+
+@pytest.mark.parametrize("bad_kwargs", [
+    dict(market_price=5.0, S=0.0, K=100.0, T=1.0, r=0.05),
+    dict(market_price=5.0, S=100.0, K=0.0, T=1.0, r=0.05),
+    dict(market_price=5.0, S=100.0, K=100.0, T=0.0, r=0.05),
+    dict(market_price=5.0, S=-10.0, K=100.0, T=1.0, r=0.05),
+])
+def test_invalid_market_inputs_return_nan_not_raise(bad_kwargs):
+    # implied_vol's contract is "return NaN, never raise, for anything
+    # that isn't a genuine usage error (bad option_type)" - S/K/T <= 0
+    # should hit that same NaN path, not a stray exception from inside
+    # the Newton/Brent machinery.
+    result = implied_vol(**bad_kwargs)
+    assert np.isnan(result)
+
+
+def test_zero_price_falls_back_to_a_low_but_valid_guess():
+    # market_price=0.0 is a boundary case: the Brenner-Subrahmanyam guess
+    # formula gives exactly 0.0, which isn't a usable Newton starting
+    # point (undefined slope), so implied_vol must fall back to a sane
+    # default starting guess rather than dividing by zero or crashing.
+    result = implied_vol(0.0, S=100.0, K=200.0, T=0.1, r=0.05, q=0.0, option_type="call")
+    assert not np.isnan(result)
+    assert result >= 0.0

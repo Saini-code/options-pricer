@@ -40,17 +40,38 @@ def get_risk_free_rate(ticker: str = "^IRX") -> float:
     return float(history["Close"].iloc[-1]) / 100.0
 
 
+def _normalize_dividend_yield(raw: float, plausible_decimal_yield_bound: float = 0.20) -> float:
+    """Rescale a raw yfinance dividendYield value to a decimal fraction.
+
+    Pulled out as its own pure function so the rescaling heuristic
+    (documented in `get_dividend_yield`) is unit-testable without
+    network access.
+    """
+    if raw > plausible_decimal_yield_bound:
+        logger.info(
+            "get_dividend_yield: raw dividendYield=%.4f exceeds %.0f%% as a decimal; "
+            "treating it as percentage points and dividing by 100",
+            raw, plausible_decimal_yield_bound * 100,
+        )
+        return raw / 100.0
+    return raw
+
+
 def get_dividend_yield(ticker: str) -> float:
     """Fetch the trailing dividend yield for `ticker`.
 
-    Source: yfinance's Ticker.info['dividendYield']. NOTE - as of the
-    yfinance/Yahoo API in use here, this field is returned in percentage
-    points (e.g. 1.01 meaning 1.01%), not as a decimal fraction, which is
-    a known inconsistency in Yahoo's own data feed. We divide by 100 here
-    so the return value is a decimal, consistent with the q parameter
-    used throughout this package. If the field is missing (e.g. a
-    non-dividend-paying stock), falls back to 0.0 with a warning rather
-    than assuming a specific default silently.
+    Source: yfinance's Ticker.info['dividendYield']. As observed live
+    against the current Yahoo Finance API (2026-08), this field is
+    returned in percentage points (e.g. 1.01 meaning 1.01%), not as a
+    decimal fraction - this is empirically observed behavior, not
+    documented Yahoo/yfinance API behavior, so it is not guaranteed to
+    stay this way (the yfinance version pin in requirements.txt already
+    broke once against a Yahoo API change during this project - see
+    README limitations). To avoid silently returning a yield 100x too
+    small if that convention ever changes, we only rescale when the raw
+    value would otherwise imply an implausible decimal yield (>20%,
+    which essentially never happens for a real trailing dividend yield);
+    otherwise we trust it is already a decimal.
 
     Parameters
     ----------
@@ -67,7 +88,7 @@ def get_dividend_yield(ticker: str) -> float:
     if raw is None:
         logger.warning("get_dividend_yield: no dividend yield found for %s; defaulting to 0.0", ticker)
         return 0.0
-    return float(raw) / 100.0
+    return _normalize_dividend_yield(float(raw))
 
 
 def get_spot_price(ticker: str) -> float:

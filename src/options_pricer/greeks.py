@@ -9,14 +9,13 @@ d^2(C-P)/dS^2 = 0 (gamma_call = gamma_put) and d(C-P)/dsigma = 0
 
 from __future__ import annotations
 
-from typing import Callable, Union
+from typing import Callable
 
 import numpy as np
 from scipy.stats import norm
 
+from ._types import ArrayLike
 from .black_scholes import d1, d2
-
-ArrayLike = Union[float, np.ndarray]
 
 
 def _validate_option_type(option_type: str) -> None:
@@ -48,12 +47,15 @@ def delta(S: ArrayLike, K: ArrayLike, T: ArrayLike, r: float, sigma: ArrayLike, 
     float or ndarray
         Delta: dV/dS, dimensionless. Call delta lies in [0, exp(-qT)]
         (i.e. [0, 1] when q=0); put delta lies in [-exp(-qT), 0].
+        NaN where T == 0 or sigma == 0 (undefined - delta is a genuine
+        step-function discontinuity at expiry, not something this
+        function approximates).
 
     Raises
     ------
     ValueError
-        If option_type is not 'call' or 'put', or if any of S, K, T, sigma
-        is negative.
+        If option_type is not 'call' or 'put', or if S or K is not
+        strictly positive, or T or sigma is negative.
     """
     _validate_option_type(option_type)
     T = np.asarray(T, dtype=float)
@@ -84,11 +86,13 @@ def gamma(S: ArrayLike, K: ArrayLike, T: ArrayLike, r: float, sigma: ArrayLike, 
     -------
     float or ndarray
         Gamma: d^2V/dS^2. Always positive for a long option (call or put).
+        NaN where T == 0 or sigma == 0 (undefined - gamma is a Dirac-delta
+        spike at the strike at expiry, not a finite number).
 
     Raises
     ------
     ValueError
-        If any of S, K, T, sigma is negative.
+        If S or K is not strictly positive, or T or sigma is negative.
     """
     S = np.asarray(S, dtype=float)
     T = np.asarray(T, dtype=float)
@@ -121,12 +125,14 @@ def vega(S: ArrayLike, K: ArrayLike, T: ArrayLike, r: float, sigma: ArrayLike, q
     -------
     float or ndarray
         Vega, per the units convention above. Always positive for a long
-        option (call or put).
+        option (call or put). NaN where T == 0 or sigma == 0 (undefined -
+        there is no time left, or no randomness left, for volatility to
+        affect the price).
 
     Raises
     ------
     ValueError
-        If any of S, K, T, sigma is negative.
+        If S or K is not strictly positive, or T or sigma is negative.
     """
     S = np.asarray(S, dtype=float)
     T = np.asarray(T, dtype=float)
@@ -158,13 +164,14 @@ def theta(S: ArrayLike, K: ArrayLike, T: ArrayLike, r: float, sigma: ArrayLike, 
     Returns
     -------
     float or ndarray
-        Theta, per the units convention above.
+        Theta, per the units convention above. NaN where T == 0 or
+        sigma == 0 (undefined at/after expiry).
 
     Raises
     ------
     ValueError
-        If option_type is not 'call' or 'put', or if any of S, K, T, sigma
-        is negative.
+        If option_type is not 'call' or 'put', or if S or K is not
+        strictly positive, or T or sigma is negative.
     """
     _validate_option_type(option_type)
     S = np.asarray(S, dtype=float)
@@ -206,13 +213,14 @@ def rho(S: ArrayLike, K: ArrayLike, T: ArrayLike, r: float, sigma: ArrayLike, q:
     Returns
     -------
     float or ndarray
-        Rho, per the units convention above.
+        Rho, per the units convention above. NaN where T == 0 or
+        sigma == 0 (undefined at/after expiry).
 
     Raises
     ------
     ValueError
-        If option_type is not 'call' or 'put', or if any of S, K, T, sigma
-        is negative.
+        If option_type is not 'call' or 'put', or if S or K is not
+        strictly positive, or T or sigma is negative.
     """
     _validate_option_type(option_type)
     K = np.asarray(K, dtype=float)

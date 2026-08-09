@@ -21,6 +21,11 @@ def test_paths_start_at_S0_and_have_correct_shape():
     np.testing.assert_allclose(paths[:, 0], S0)
 
 
+def test_n_steps_below_one_raises_value_error():
+    with pytest.raises(ValueError):
+        simulate_gbm_paths(S0, R, SIGMA, T, n_steps=0, n_paths=100, seed=0)
+
+
 def test_seed_reproducibility():
     p1 = simulate_gbm_paths(S0, R, SIGMA, T, n_steps=50, n_paths=100, seed=42)
     p2 = simulate_gbm_paths(S0, R, SIGMA, T, n_steps=50, n_paths=100, seed=42)

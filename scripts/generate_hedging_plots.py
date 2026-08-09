@@ -20,6 +20,18 @@ PLOTS_DIR = Path(__file__).resolve().parent.parent / "plots"
 # Baseline scenario: ATM call, 3 months to expiry.
 S0, K, T, R, Q = 100.0, 100.0, 0.25, 0.05, 0.0
 SIGMA = 0.20
+
+# NOTE on day-count convention: T above and everywhere in src/ is calendar
+# time (e.g. T=0.25 means a calendar quarter), consistent with continuous
+# discounting. Here we convert "number of rebalances" using 252 TRADING
+# days/year - the standard convention when annualising a volatility
+# calibrated from daily bars - not 365 calendar days. data.py's
+# clean_option_chain, by contrast, annualises time-to-expiry using 365
+# calendar days (the right convention for discounting/dividend accrual,
+# which runs on calendar time). Both conventions are individually
+# standard for what they're used for; mixing them within one project
+# without flagging it is a common, easy-to-miss source of small
+# systematic error - see README limitations.
 TRADING_DAYS_PER_YEAR = 252
 TRADING_HOURS_PER_DAY = 6.5
 
@@ -86,9 +98,16 @@ def experiment_2_realised_vs_implied_vol() -> Path:
 
 
 def experiment_3_transaction_costs_vs_frequency() -> Path:
+    # n_paths is lower than experiments 1-2 (20,000) purely for runtime:
+    # this experiment runs 7 step_counts x 3 cost_levels = 21 simulations
+    # rather than 1-15.
     n_paths = 5_000
     step_counts = [4, 12, 26, 52, 126, 252, 504]
     cost_levels_bps = [0.0, 5.0, 20.0]
+    # Illustrative choice, not calibrated to any actual risk preference -
+    # picked only to make the mean/std tradeoff visually produce an
+    # interior minimum in the plot below. A real desk would set this from
+    # its own risk limits/utility function, not a fixed constant.
     risk_aversion = 2.0  # weight on P&L std in the risk-adjusted objective
 
     fig, axes = plt.subplots(1, 3, figsize=(18, 5.5))

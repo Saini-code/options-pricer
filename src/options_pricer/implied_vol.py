@@ -182,6 +182,12 @@ def implied_vol(
         return float("nan")
 
     try:
+        # NOTE: brentq's xtol bounds the width of the sigma bracket
+        # directly, not the price error - a different quantity than the
+        # price-error `tol` used to judge Newton's convergence above. We
+        # reuse the same numeric value for both because 1e-8 is tight
+        # enough to be a non-issue in either unit, not because they mean
+        # the same thing.
         return brentq(objective, _SIGMA_LO, _SIGMA_HI, xtol=tol, maxiter=max_iter)
     except (RuntimeError, ValueError) as exc:
         logger.warning(

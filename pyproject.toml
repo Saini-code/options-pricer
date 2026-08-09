@@ -1,3 +1,9 @@
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
+filterwarnings = [
+    # py_vollib is deliberately used (CLAUDE.md) as an independent
+    # cross-check library in tests/ only; its own deprecation notice
+    # about a successor package doesn't affect correctness here.
+    "ignore:py_vollib is deprecated:DeprecationWarning",
+]

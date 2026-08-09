@@ -31,6 +31,12 @@ TICKER = "SPY"
 
 
 def build_dataset(max_expiries: int = 8) -> tuple[pd.DataFrame, float, float, float]:
+    # max_expiries=8 caps this to SPY's nearest ~8 expiries (its dense
+    # weekly listings mean that's only a few weeks of tenor - see README
+    # limitations). fetch_option_chain does one network round-trip per
+    # expiry, and SPY has ~29 of them including LEAPS out to ~2 years;
+    # raise this if you want a fuller term structure and don't mind the
+    # slower fetch.
     spot = get_spot_price(TICKER)
     r = get_risk_free_rate()
     q = get_dividend_yield(TICKER)
