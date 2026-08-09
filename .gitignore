@@ -1,0 +1,16 @@
+.claude/
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+.ipynb_checkpoints/
+*.egg-info/
+.DS_Store
+
+# generated plots — keep the directory, ignore its contents
+plots/*.png
+!plots/.gitkeep
+
+# local data caches
+*.csv
